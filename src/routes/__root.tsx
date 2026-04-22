@@ -46,6 +46,12 @@ export const Route = createRootRoute({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "eTwin — Power Your Digital World" },
+      { name: "description", content: "eTwin Spark is a modern eCommerce web application for selling electronics and digital services." },
+      { property: "og:description", content: "eTwin Spark is a modern eCommerce web application for selling electronics and digital services." },
+      { name: "twitter:description", content: "eTwin Spark is a modern eCommerce web application for selling electronics and digital services." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/342ee7d5-0ff7-4543-ab87-3fa47a1e9385/id-preview-5c3ece29--ad1930b1-1f26-48af-9387-fd172d6e2e8f.lovable.app-1776870308211.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/342ee7d5-0ff7-4543-ab87-3fa47a1e9385/id-preview-5c3ece29--ad1930b1-1f26-48af-9387-fd172d6e2e8f.lovable.app-1776870308211.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
