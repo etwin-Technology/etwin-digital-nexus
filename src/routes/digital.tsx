@@ -1,8 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Star, Download, Tag } from "lucide-react";
+import { useState } from "react";
 import { services } from "@/data/services";
+import { digitalProducts, type DigitalProduct } from "@/data/digitalProducts";
 import { SectionHeading } from "@/components/SectionHeading";
+
+const productCategories = [
+  "All",
+  "Website Template",
+  "WordPress Theme",
+  "Chatbot Module",
+  "Odoo Module",
+  "Shopify Theme",
+  "Dashboard Kit",
+] as const;
 
 export const Route = createFileRoute("/digital")({
   head: () => ({
@@ -83,6 +95,9 @@ function DigitalPage() {
           );
         })}
       </div>
+
+      {/* DIGITAL PRODUCTS MARKETPLACE */}
+      <DigitalProductsSection />
 
       {/* Process */}
       <section className="mt-28">
