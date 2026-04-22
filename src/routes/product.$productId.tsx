@@ -80,7 +80,7 @@ function ProductPage() {
           </p>
 
           <ul className="mt-8 grid grid-cols-2 gap-3">
-            {product.highlights.map((h) => (
+            {product.highlights.map((h: string) => (
               <li key={h} className="flex items-center gap-2 text-sm">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary">
                   <Check className="h-3 w-3" />
