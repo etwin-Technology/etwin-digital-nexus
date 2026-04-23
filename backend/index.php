@@ -2,12 +2,23 @@
 /**
  * Front controller — routes /api/* to the matching handler.
  *
- * Examples:
- *   GET  /api/products
- *   GET  /api/products/etwin-aura-headphones
- *   GET  /api/digital-products
- *   POST /api/orders
+ * Public:
+ *   GET  /api/products              GET /api/products/{id}
+ *   GET  /api/digital-products      GET /api/digital-products/{id}
+ *   GET  /api/services              GET /api/services/{id}
+ *   POST /api/services/request
+ *   POST /api/orders                (checkout)
  *   POST /api/contact
+ *
+ * Admin (session required):
+ *   POST /api/admin/login           POST /api/admin/logout      GET /api/admin/me
+ *   POST/PUT/DELETE /api/products/{id}
+ *   POST/PUT/DELETE /api/digital-products/{id}
+ *   POST/PUT/DELETE /api/services/{id}
+ *   GET/PUT/DELETE  /api/orders/{id}
+ *   GET/PUT/DELETE  /api/messages/{id}
+ *   GET/PUT/DELETE  /api/requests/{id}
+ *   GET             /api/stats
  */
 
 require_once __DIR__ . "/config/cors.php";
@@ -20,10 +31,7 @@ if ($base && strpos($uri, $base) === 0) {
 $uri = trim($uri, "/");
 $segments = $uri === "" ? [] : explode("/", $uri);
 
-// Strip leading "api"
-if (isset($segments[0]) && $segments[0] === "api") {
-    array_shift($segments);
-}
+if (isset($segments[0]) && $segments[0] === "api") array_shift($segments);
 
 $resource = $segments[0] ?? "";
 $param    = $segments[1] ?? null;
@@ -33,19 +41,18 @@ switch ($resource) {
     case "":
         echo json_encode([
             "name"    => "eTwin API",
-            "version" => "1.0",
-            "endpoints" => [
-                "GET  /api/products",
-                "GET  /api/products/{id}",
-                "GET  /api/digital-products",
-                "GET  /api/digital-products/{id}",
-                "GET  /api/services",
-                "GET  /api/orders",
-                "POST /api/orders",
-                "POST /api/contact",
-                "POST /api/services/request",
-            ],
+            "version" => "2.0",
         ], JSON_PRETTY_PRINT);
+        break;
+
+    case "admin":
+        // /api/admin/{action}
+        $_GET["action"] = $param;
+        require __DIR__ . "/api/admin-auth.php";
+        break;
+
+    case "stats":
+        require __DIR__ . "/api/stats.php";
         break;
 
     case "products":
@@ -62,6 +69,7 @@ switch ($resource) {
         if ($param === "request") {
             require __DIR__ . "/api/service-request.php";
         } else {
+            $_GET["id"] = $param;
             require __DIR__ . "/api/services.php";
         }
         break;
@@ -69,6 +77,16 @@ switch ($resource) {
     case "orders":
         $_GET["id"] = $param;
         require __DIR__ . "/api/orders.php";
+        break;
+
+    case "messages":
+        $_GET["id"] = $param;
+        require __DIR__ . "/api/messages.php";
+        break;
+
+    case "requests":
+        $_GET["id"] = $param;
+        require __DIR__ . "/api/requests.php";
         break;
 
     case "contact":
