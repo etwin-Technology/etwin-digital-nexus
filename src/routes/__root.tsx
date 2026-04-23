@@ -1,7 +1,9 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { CartProvider } from "@/context/CartContext";
+import { AdminAuthProvider } from "@/context/AdminAuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -83,15 +85,25 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = pathname.startsWith("/admin");
+
   return (
-    <CartProvider>
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 pt-16">
+    <AdminAuthProvider>
+      <CartProvider>
+        {isAdmin ? (
           <Outlet />
-        </main>
-        <Footer />
-      </div>
-    </CartProvider>
+        ) : (
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1 pt-16">
+              <Outlet />
+            </main>
+            <Footer />
+          </div>
+        )}
+        <Toaster richColors position="top-right" />
+      </CartProvider>
+    </AdminAuthProvider>
   );
 }
