@@ -56,6 +56,12 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Link
+            to="/admin"
+            className="hidden sm:inline-flex items-center px-3 h-10 rounded-full glass text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+          >
+            Admin
+          </Link>
+          <Link
             to="/cart"
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-full glass hover:bg-primary/10 hover:border-primary/40 transition-colors"
             aria-label="Cart"
