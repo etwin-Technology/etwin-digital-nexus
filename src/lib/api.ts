@@ -6,7 +6,8 @@
  */
 
 export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost/etwin-api/api";
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  "http://localhost/test/etwin-digital-nexus/backend/api";
 
 export class ApiError extends Error {
   status: number;
