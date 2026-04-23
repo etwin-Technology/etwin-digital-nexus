@@ -13,8 +13,16 @@ import { Route as ShopRouteImport } from './routes/shop'
 import { Route as DigitalRouteImport } from './routes/digital'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ProductProductIdRouteImport } from './routes/product.$productId'
+import { Route as AdminServicesRouteImport } from './routes/admin.services'
+import { Route as AdminRequestsRouteImport } from './routes/admin.requests'
+import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
+import { Route as AdminDigitalProductsRouteImport } from './routes/admin.digital-products'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -36,24 +44,72 @@ const CartRoute = CartRouteImport.update({
   path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ProductProductIdRoute = ProductProductIdRouteImport.update({
   id: '/product/$productId',
   path: '/product/$productId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminServicesRoute = AdminServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRequestsRoute = AdminRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsRoute = AdminProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersRoute = AdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMessagesRoute = AdminMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDigitalProductsRoute = AdminDigitalProductsRouteImport.update({
+  id: '/digital-products',
+  path: '/digital-products',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/digital': typeof DigitalRoute
   '/shop': typeof ShopRoute
+  '/admin/digital-products': typeof AdminDigitalProductsRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/product/$productId': typeof ProductProductIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,40 +117,85 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/digital': typeof DigitalRoute
   '/shop': typeof ShopRoute
+  '/admin/digital-products': typeof AdminDigitalProductsRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/product/$productId': typeof ProductProductIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/digital': typeof DigitalRoute
   '/shop': typeof ShopRoute
+  '/admin/digital-products': typeof AdminDigitalProductsRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/product/$productId': typeof ProductProductIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/cart'
     | '/contact'
     | '/digital'
     | '/shop'
+    | '/admin/digital-products'
+    | '/admin/messages'
+    | '/admin/orders'
+    | '/admin/products'
+    | '/admin/requests'
+    | '/admin/services'
     | '/product/$productId'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cart' | '/contact' | '/digital' | '/shop' | '/product/$productId'
-  id:
-    | '__root__'
+  to:
     | '/'
     | '/cart'
     | '/contact'
     | '/digital'
     | '/shop'
+    | '/admin/digital-products'
+    | '/admin/messages'
+    | '/admin/orders'
+    | '/admin/products'
+    | '/admin/requests'
+    | '/admin/services'
     | '/product/$productId'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/cart'
+    | '/contact'
+    | '/digital'
+    | '/shop'
+    | '/admin/digital-products'
+    | '/admin/messages'
+    | '/admin/orders'
+    | '/admin/products'
+    | '/admin/requests'
+    | '/admin/services'
+    | '/product/$productId'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CartRoute: typeof CartRoute
   ContactRoute: typeof ContactRoute
   DigitalRoute: typeof DigitalRoute
@@ -132,12 +233,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/product/$productId': {
       id: '/product/$productId'
@@ -146,11 +261,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/services': {
+      id: '/admin/services'
+      path: '/services'
+      fullPath: '/admin/services'
+      preLoaderRoute: typeof AdminServicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/requests': {
+      id: '/admin/requests'
+      path: '/requests'
+      fullPath: '/admin/requests'
+      preLoaderRoute: typeof AdminRequestsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products': {
+      id: '/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/messages': {
+      id: '/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AdminMessagesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/digital-products': {
+      id: '/admin/digital-products'
+      path: '/digital-products'
+      fullPath: '/admin/digital-products'
+      preLoaderRoute: typeof AdminDigitalProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminDigitalProductsRoute: typeof AdminDigitalProductsRoute
+  AdminMessagesRoute: typeof AdminMessagesRoute
+  AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminProductsRoute: typeof AdminProductsRoute
+  AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminServicesRoute: typeof AdminServicesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDigitalProductsRoute: AdminDigitalProductsRoute,
+  AdminMessagesRoute: AdminMessagesRoute,
+  AdminOrdersRoute: AdminOrdersRoute,
+  AdminProductsRoute: AdminProductsRoute,
+  AdminRequestsRoute: AdminRequestsRoute,
+  AdminServicesRoute: AdminServicesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   CartRoute: CartRoute,
   ContactRoute: ContactRoute,
   DigitalRoute: DigitalRoute,
