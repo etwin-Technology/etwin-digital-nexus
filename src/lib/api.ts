@@ -1,13 +1,44 @@
 /**
  * Central API client for the eTwin PHP backend.
  *
- * Configure the URL with VITE_API_URL in .env (default: http://localhost/etwin-api/api).
+ * Configure the URL with VITE_API_URL in .env.
+ * If it's missing or wrong, the client will auto-try common local URLs used by
+ * Laragon / XAMPP / MAMP, including project subfolders.
  * All requests use credentials: "include" so the admin PHP session cookie travels.
  */
 
-export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost/test/etwin-digital-nexus/backend/api";
+function trimTrailingSlash(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+function buildApiBaseCandidates() {
+  const candidates = new Set<string>();
+  const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+
+  if (envUrl) {
+    candidates.add(trimTrailingSlash(envUrl));
+  }
+
+  if (typeof window !== "undefined") {
+    const { origin, pathname } = window.location;
+    const segments = pathname.split("/").filter(Boolean);
+
+    for (let index = segments.length; index >= 0; index -= 1) {
+      const prefix = segments.slice(0, index).join("/");
+      const basePath = prefix ? `/${prefix}` : "";
+
+      candidates.add(trimTrailingSlash(`${origin}${basePath}/backend/api`));
+      candidates.add(trimTrailingSlash(`${origin}${basePath}/api`));
+    }
+  } else {
+    candidates.add("/backend/api");
+    candidates.add("/api");
+  }
+
+  return [...candidates];
+}
+
+export let API_URL = buildApiBaseCandidates()[0] ?? "/backend/api";
 
 export class ApiError extends Error {
   status: number;
@@ -18,27 +49,67 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-    ...init,
-  });
+  const requestPath = path.startsWith("/") ? path : `/${path}`;
+  const apiBases = [API_URL, ...buildApiBaseCandidates().filter((candidate) => candidate !== API_URL)];
+  let lastError: ApiError | null = null;
 
-  let body: any = null;
-  const text = await res.text();
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { error: text };
+  for (const baseUrl of apiBases) {
+    try {
+      const res = await fetch(`${baseUrl}${requestPath}`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(init.headers ?? {}),
+        },
+        ...init,
+      });
+
+      let body: any = null;
+      const text = await res.text();
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = { error: text };
+      }
+
+      if (res.ok) {
+        API_URL = baseUrl;
+        return body as T;
+      }
+
+      const error = new ApiError(body?.error ?? `Request failed (${res.status})`, res.status);
+
+      if (res.status === 404) {
+        lastError = error;
+        continue;
+      }
+
+      API_URL = baseUrl;
+      throw error;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      if (error instanceof TypeError) {
+        lastError = new ApiError(
+          "Could not reach the PHP API. If you use Laragon, open the app on your local domain and set VITE_API_URL to your backend URL.",
+          0,
+        );
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  if (!res.ok) {
-    throw new ApiError(body?.error ?? `Request failed (${res.status})`, res.status);
-  }
-  return body as T;
+  throw (
+    lastError ??
+    new ApiError(
+      "Could not reach the PHP API. Check your Laragon URL and VITE_API_URL.",
+      0,
+    )
+  );
 }
 
 export const api = {

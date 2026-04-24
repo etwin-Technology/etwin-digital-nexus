@@ -19,7 +19,7 @@ Native PHP REST API (no framework) for the eTwin store. Works on XAMPP / MAMP / 
    (creates database `etwin_db` + tables + sample data + default admin).
 
 3. Edit `backend/config/database.php` if your MySQL user/password differ
-   (default XAMPP: user `root`, password empty).
+   (Laragon default is often user `root`, password empty unless you changed it).
 
 4. Start Apache + MySQL.
 
@@ -44,6 +44,24 @@ VITE_API_URL=http://localhost/test/etwin-digital-nexus/backend/api
 ```
 
 Then restart `npm run dev`. The admin login at `/admin` will hit your local PHP.
+
+### Laragon examples
+
+If Laragon serves this project as a virtual host, your URLs may look like:
+
+```
+http://etwin-digital-nexus.test/backend/api
+http://myshop.test/backend/api
+```
+
+In that case set:
+
+```
+VITE_API_URL=http://etwin-digital-nexus.test/backend/api
+```
+
+If you open the built app directly from the same Laragon domain, the frontend can
+also auto-detect `/backend/api` without extra config.
 
 > ⚠️ **Important about the Lovable preview:**
 > The Lovable online preview runs on `https://*.lovable.app`. Your browser will
