@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useApiData";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductCardSkeleton } from "@/components/Skeletons";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export const Route = createFileRoute("/shop")({
@@ -22,18 +23,25 @@ export const Route = createFileRoute("/shop")({
   component: ShopPage,
 });
 
-const categories = ["All", "Audio", "Wearables", "Computers", "Mobile", "Accessories"] as const;
+const baseCategories = ["All", "Audio", "Wearables", "Computers", "Mobile", "Accessories"] as const;
 
 function ShopPage() {
-  const [category, setCategory] = useState<(typeof categories)[number]>("All");
+  const { data: products = [], isLoading } = useProducts();
+  const [category, setCategory] = useState<string>("All");
   const [maxPrice, setMaxPrice] = useState(2000);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>(baseCategories);
+    products.forEach((p) => set.add(p.category));
+    return Array.from(set);
+  }, [products]);
 
   const filtered = useMemo(
     () =>
       products.filter(
         (p) => (category === "All" || p.category === category) && p.price <= maxPrice,
       ),
-    [category, maxPrice],
+    [products, category, maxPrice],
   );
 
   return (
@@ -93,9 +101,15 @@ function ShopPage() {
 
         <div>
           <div className="mb-6 text-sm text-muted-foreground">
-            {filtered.length} product{filtered.length === 1 ? "" : "s"}
+            {isLoading ? "Loading…" : `${filtered.length} product${filtered.length === 1 ? "" : "s"}`}
           </div>
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="glass rounded-2xl p-12 text-center text-muted-foreground">
               No products match your filters.
             </div>

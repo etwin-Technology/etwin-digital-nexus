@@ -1,27 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingBag } from "lucide-react";
-import { getProduct, products } from "@/data/products";
+import { ArrowLeft, Check, Loader2, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
+import { useProduct, useProducts } from "@/hooks/useApiData";
 import { useCart } from "@/context/CartContext";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/product/$productId")({
-  loader: ({ params }) => {
-    const product = getProduct(params.productId);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — eTwin` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: `${loaderData.product.name} — eTwin` },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-          { name: "twitter:image", content: loaderData.product.image },
-        ]
-      : [],
+  head: ({ params }) => ({
+    meta: [
+      { title: `${params.productId} — eTwin` },
+      { property: "og:title", content: `${params.productId} — eTwin` },
+    ],
   }),
   notFoundComponent: () => (
     <div className="mx-auto max-w-3xl px-4 py-32 text-center">
@@ -35,9 +25,24 @@ export const Route = createFileRoute("/product/$productId")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { productId } = Route.useParams();
+  const { data: product, isLoading, error } = useProduct(productId);
+  const { data: all = [] } = useProducts();
   const { add } = useCart();
-  const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 md:px-8 py-32 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    throw notFound();
+  }
+
+  const related = all.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-8 py-12">
@@ -92,7 +97,10 @@ function ProductPage() {
 
           <div className="mt-10 flex flex-wrap gap-3">
             <button
-              onClick={() => add(product)}
+              onClick={() => {
+                add(product);
+                toast.success(`${product.name} added to cart`);
+              }}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-5px_var(--primary)] hover:scale-[1.03] active:scale-95 transition-transform"
             >
               <ShoppingBag className="h-4 w-4" /> Add to cart
