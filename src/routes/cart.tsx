@@ -154,9 +154,12 @@ function CartPage() {
               <dd className="gradient-text text-xl">${grand.toFixed(2)}</dd>
             </div>
           </dl>
-          <button className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-5px_var(--primary)] hover:scale-[1.02] active:scale-95 transition-transform">
+          <Link
+            to="/checkout"
+            className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-5px_var(--primary)] hover:scale-[1.02] active:scale-95 transition-transform"
+          >
             Checkout <ArrowRight className="h-4 w-4" />
-          </button>
+          </Link>
           <p className="mt-3 text-xs text-muted-foreground text-center">
             Secure checkout · Free returns within 30 days
           </p>

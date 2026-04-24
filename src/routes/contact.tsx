@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MapPin, Phone, Send } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Mail, MapPin, Phone, Send } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { SectionHeading } from "@/components/SectionHeading";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -19,7 +21,24 @@ export const Route = createFileRoute("/contact")({
 });
 
 function ContactPage() {
-  const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+
+  const update = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.post("/contact", form);
+      toast.success("Message sent! We'll get back to you within 24h.");
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-8 py-16">
@@ -45,43 +64,40 @@ function ContactPage() {
                 <Icon className="h-4 w-4" />
               </span>
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {label}
-                </div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
                 <div className="mt-1 font-medium">{value}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
-          className="glass-strong rounded-2xl p-7 space-y-4"
-        >
+        <form onSubmit={submit} className="glass-strong rounded-2xl p-7 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Name" name="name" placeholder="Jane Doe" />
-            <Field label="Email" name="email" type="email" placeholder="jane@company.com" />
+            <Field label="Name" value={form.name} onChange={(v) => update("name", v)} required />
+            <Field label="Email" type="email" value={form.email} onChange={(v) => update("email", v)} required />
           </div>
-          <Field label="Subject" name="subject" placeholder="How can we help?" />
+          <Field label="Subject" value={form.subject} onChange={(v) => update("subject", v)} required />
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">
-              Message
-            </label>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Message</label>
             <textarea
               required
               rows={6}
+              value={form.message}
+              onChange={(e) => update("message", e.target.value)}
               placeholder="Tell us about your project…"
               className="mt-2 w-full rounded-xl bg-input/50 border border-border px-4 py-3 text-sm focus:outline-none focus:border-primary/60 focus:bg-input/80 transition-colors resize-none"
             />
           </div>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-5px_var(--primary)] hover:scale-[1.03] transition-transform"
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-5px_var(--primary)] hover:scale-[1.03] transition-transform disabled:opacity-60 disabled:hover:scale-100"
           >
-            {sent ? "Sent ✓" : (
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+              </>
+            ) : (
               <>
                 Send message <Send className="h-4 w-4" />
               </>
@@ -95,26 +111,25 @@ function ContactPage() {
 
 function Field({
   label,
-  name,
+  value,
+  onChange,
   type = "text",
-  placeholder,
+  required,
 }: {
   label: string;
-  name: string;
+  value: string;
+  onChange: (v: string) => void;
   type?: string;
-  placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <div>
-      <label htmlFor={name} className="text-xs uppercase tracking-wider text-muted-foreground">
-        {label}
-      </label>
+      <label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</label>
       <input
-        id={name}
-        name={name}
         type={type}
-        required
-        placeholder={placeholder}
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="mt-2 w-full rounded-xl bg-input/50 border border-border px-4 py-3 text-sm focus:outline-none focus:border-primary/60 focus:bg-input/80 transition-colors"
       />
     </div>
