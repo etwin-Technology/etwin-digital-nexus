@@ -2,9 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Zap, ShieldCheck, Truck } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
-import { products } from "@/data/products";
-import { services } from "@/data/services";
+import { useProducts, useServices } from "@/hooks/useApiData";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductCardSkeleton, ServiceCardSkeleton } from "@/components/Skeletons";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export const Route = createFileRoute("/")({
@@ -48,8 +48,10 @@ const testimonials = [
 ];
 
 function HomePage() {
-  const featured = products.slice(0, 4);
-  const featuredServices = services.slice(0, 3);
+  const { data: products, isLoading: prodLoading } = useProducts();
+  const { data: services, isLoading: svcLoading } = useServices();
+  const featured = (products ?? []).slice(0, 4);
+  const featuredServices = (services ?? []).slice(0, 3);
 
   return (
     <div className="relative">
@@ -172,9 +174,9 @@ function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((p, i) => (
-            <ProductCard key={p.id} product={p} index={i} />
-          ))}
+          {prodLoading
+            ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+            : featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
         </div>
       </section>
 
@@ -192,34 +194,36 @@ function HomePage() {
         />
 
         <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredServices.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group relative rounded-2xl glass p-7 hover-lift overflow-hidden"
-              >
-                <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-highlight/20 text-primary border border-primary/20">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-5 text-xl font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                  {s.description}
-                </p>
-                <Link
-                  to="/digital"
-                  className="mt-6 inline-flex items-center gap-1 text-sm text-primary"
-                >
-                  Order now <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </motion.div>
-            );
-          })}
+          {svcLoading
+            ? Array.from({ length: 3 }).map((_, i) => <ServiceCardSkeleton key={i} />)
+            : featuredServices.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    className="group relative rounded-2xl glass p-7 hover-lift overflow-hidden"
+                  >
+                    <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-highlight/20 text-primary border border-primary/20">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-5 text-xl font-semibold">{s.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                      {s.description}
+                    </p>
+                    <Link
+                      to="/digital"
+                      className="mt-6 inline-flex items-center gap-1 text-sm text-primary"
+                    >
+                      Order now <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </motion.div>
+                );
+              })}
         </div>
       </section>
 
