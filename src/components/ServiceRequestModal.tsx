@@ -23,7 +23,7 @@ export function ServiceRequestModal({
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post("/service-request", {
+      await api.post("/services/request", {
         service_id: service.id,
         name,
         email,
