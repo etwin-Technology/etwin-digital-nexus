@@ -1,9 +1,11 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { CartProvider } from "@/context/CartContext";
 import { AdminAuthProvider } from "@/context/AdminAuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import type { RouterAppContext } from "@/router";
 
 import appCss from "../styles.css?url";
 
@@ -29,7 +31,7 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -86,24 +88,27 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { queryClient } = Route.useRouteContext();
   const isAdmin = pathname.startsWith("/admin");
 
   return (
-    <AdminAuthProvider>
-      <CartProvider>
-        {isAdmin ? (
-          <Outlet />
-        ) : (
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1 pt-16">
-              <Outlet />
-            </main>
-            <Footer />
-          </div>
-        )}
-        <Toaster richColors position="top-right" />
-      </CartProvider>
-    </AdminAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AdminAuthProvider>
+        <CartProvider>
+          {isAdmin ? (
+            <Outlet />
+          ) : (
+            <div className="min-h-screen flex flex-col">
+              <Navbar />
+              <main className="flex-1 pt-16">
+                <Outlet />
+              </main>
+              <Footer />
+            </div>
+          )}
+          <Toaster richColors position="top-right" />
+        </CartProvider>
+      </AdminAuthProvider>
+    </QueryClientProvider>
   );
 }
