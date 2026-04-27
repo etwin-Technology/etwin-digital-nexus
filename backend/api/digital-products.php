@@ -7,11 +7,12 @@ $method = $_SERVER["REQUEST_METHOD"];
 $id     = $_GET["id"] ?? null;
 
 function hydrate_dp(array $r): array {
-    $r["features"]  = json_decode($r["features"] ?? "[]", true);
+    $r["features"]  = json_decode($r["features"] ?? "[]", true) ?? [];
     $r["price"]     = (float) $r["price"];
     $r["old_price"] = $r["old_price"] !== null ? (float) $r["old_price"] : null;
     $r["rating"]    = (float) $r["rating"];
     $r["sales"]     = (int) $r["sales"];
+    $r["is_free"]   = (int) ($r["is_free"] ?? 0) === 1;
     return $r;
 }
 
@@ -38,8 +39,8 @@ try {
         if ($newId === "") { http_response_code(400); echo json_encode(["error" => "id required"]); exit; }
         $stmt = $db->prepare("
             INSERT INTO digital_products
-              (id, name, type, price, old_price, rating, sales, tagline, features, badge, download_url)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+              (id, name, type, price, old_price, rating, sales, tagline, features, badge, image, download_url, file_path, is_free)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ");
         $stmt->execute([
             $newId,
@@ -52,7 +53,10 @@ try {
             (string) ($body["tagline"] ?? ""),
             json_encode($body["features"] ?? []),
             $body["badge"] ?? null,
+            $body["image"] ?? null,
             $body["download_url"] ?? null,
+            $body["file_path"] ?? null,
+            !empty($body["is_free"]) ? 1 : 0,
         ]);
         http_response_code(201);
         echo json_encode(["success" => true, "id" => $newId]);
@@ -63,7 +67,7 @@ try {
         if (!$id) { http_response_code(400); echo json_encode(["error" => "id required"]); exit; }
         $stmt = $db->prepare("
             UPDATE digital_products
-            SET name=?, type=?, price=?, old_price=?, rating=?, sales=?, tagline=?, features=?, badge=?, download_url=?
+            SET name=?, type=?, price=?, old_price=?, rating=?, sales=?, tagline=?, features=?, badge=?, image=?, download_url=?, file_path=?, is_free=?
             WHERE id=?
         ");
         $stmt->execute([
@@ -76,7 +80,10 @@ try {
             (string) ($body["tagline"] ?? ""),
             json_encode($body["features"] ?? []),
             $body["badge"] ?? null,
+            $body["image"] ?? null,
             $body["download_url"] ?? null,
+            $body["file_path"] ?? null,
+            !empty($body["is_free"]) ? 1 : 0,
             $id,
         ]);
         echo json_encode(["success" => true]);
@@ -85,8 +92,7 @@ try {
 
     if ($method === "DELETE") {
         if (!$id) { http_response_code(400); echo json_encode(["error" => "id required"]); exit; }
-        $stmt = $db->prepare("DELETE FROM digital_products WHERE id = ?");
-        $stmt->execute([$id]);
+        $db->prepare("DELETE FROM digital_products WHERE id = ?")->execute([$id]);
         echo json_encode(["success" => true]);
         exit;
     }

@@ -1,26 +1,7 @@
 <?php
 /**
  * Front controller — routes /api/* to the matching handler.
- *
- * Public:
- *   GET  /api/products              GET /api/products/{id}
- *   GET  /api/digital-products      GET /api/digital-products/{id}
- *   GET  /api/services              GET /api/services/{id}
- *   POST /api/services/request
- *   POST /api/orders                (checkout)
- *   POST /api/contact
- *
- * Admin (session required):
- *   POST /api/admin/login           POST /api/admin/logout      GET /api/admin/me
- *   POST/PUT/DELETE /api/products/{id}
- *   POST/PUT/DELETE /api/digital-products/{id}
- *   POST/PUT/DELETE /api/services/{id}
- *   GET/PUT/DELETE  /api/orders/{id}
- *   GET/PUT/DELETE  /api/messages/{id}
- *   GET/PUT/DELETE  /api/requests/{id}
- *   GET             /api/stats
  */
-
 require_once __DIR__ . "/config/cors.php";
 
 $base = rtrim(str_replace("\\", "/", dirname($_SERVER["SCRIPT_NAME"])), "/");
@@ -35,18 +16,13 @@ if (isset($segments[0]) && $segments[0] === "api") array_shift($segments);
 
 $resource = $segments[0] ?? "";
 $param    = $segments[1] ?? null;
-$action   = $segments[2] ?? null;
 
 switch ($resource) {
     case "":
-        echo json_encode([
-            "name"    => "eTwin API",
-            "version" => "2.0",
-        ], JSON_PRETTY_PRINT);
+        echo json_encode(["name" => "eTwin API", "version" => "3.0"], JSON_PRETTY_PRINT);
         break;
 
     case "admin":
-        // /api/admin/{action}
         $_GET["action"] = $param;
         require __DIR__ . "/api/admin-auth.php";
         break;
@@ -58,6 +34,11 @@ switch ($resource) {
     case "products":
         $_GET["id"] = $param;
         require __DIR__ . "/api/products.php";
+        break;
+
+    case "categories":
+        $_GET["id"] = $param;
+        require __DIR__ . "/api/categories.php";
         break;
 
     case "digital-products":
@@ -91,6 +72,18 @@ switch ($resource) {
 
     case "contact":
         require __DIR__ . "/api/contact.php";
+        break;
+
+    case "settings":
+        require __DIR__ . "/api/settings.php";
+        break;
+
+    case "uploads":
+        require __DIR__ . "/api/uploads.php";
+        break;
+
+    case "downloads":
+        require __DIR__ . "/api/downloads.php";
         break;
 
     default:
