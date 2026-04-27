@@ -125,12 +125,56 @@ export type ApiProduct = {
   name: string;
   price: number;
   category: string;
+  category_id?: string | null;
   image: string;
+  images?: string[];
   description: string;
   highlights: string[];
   stock: number;
+  featured?: boolean;
   created_at?: string;
 };
+
+export type ApiCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  sort_order: number;
+  product_count?: number;
+};
+
+export type ApiSettings = Record<string, string>;
+
+export type ApiUpload = {
+  success: boolean;
+  url: string;
+  path: string;
+  name: string;
+  size: number;
+  type: string;
+};
+
+export type ApiDownloadToken = {
+  success: boolean;
+  token: string;
+  url: string;
+  expires_at: string;
+  is_free: boolean;
+};
+
+// Multipart upload helper (kept here so all API calls stay in one place)
+export async function apiUpload(file: File, type: "image" | "digital" = "image"): Promise<ApiUpload> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const url = `${API_URL}/uploads?type=${type}`;
+  const res = await fetch(url, { method: "POST", credentials: "include", body: fd });
+  const text = await res.text();
+  let body: any = null;
+  try { body = text ? JSON.parse(text) : null; } catch { body = { error: text }; }
+  if (!res.ok) throw new ApiError(body?.error ?? `Upload failed (${res.status})`, res.status);
+  return body as ApiUpload;
+}
 
 export type ApiDigitalProduct = {
   id: string;
@@ -143,7 +187,10 @@ export type ApiDigitalProduct = {
   tagline: string;
   features: string[];
   badge: string | null;
+  image?: string | null;
   download_url: string | null;
+  file_path?: string | null;
+  is_free?: boolean;
   created_at?: string;
 };
 
