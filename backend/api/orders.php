@@ -47,39 +47,71 @@ try {
             exit;
         }
 
+        // Resolve which items are digital
+        $ids = array_values(array_filter(array_map(fn($i) => (string) ($i["product_id"] ?? ""), $items)));
+        $digitalIds = [];
+        if (count($ids)) {
+            $place = implode(",", array_fill(0, count($ids), "?"));
+            $st = $db->prepare("SELECT id FROM digital_products WHERE id IN ($place)");
+            $st->execute($ids);
+            $digitalIds = array_column($st->fetchAll(), "id");
+        }
+
         $subtotal = 0.0;
+        $hasPhysical = false;
         foreach ($items as $it) {
             $subtotal += ((float) ($it["unit_price"] ?? 0)) * ((int) ($it["quantity"] ?? 0));
+            if (!in_array($it["product_id"] ?? "", $digitalIds, true)) $hasPhysical = true;
         }
-        $shipping = $subtotal > 500 ? 0 : 19;
-        $tax = round($subtotal * 0.08, 2);
-        $total = round($subtotal + $shipping + $tax, 2);
+
+        // settings-driven shipping/tax
+        $cfg = [];
+        foreach ($db->query("SELECT setting_key, setting_value FROM settings")->fetchAll() as $r) {
+            $cfg[$r["setting_key"]] = $r["setting_value"];
+        }
+        $flatShipping = (float) ($cfg["shipping_flat"] ?? 19);
+        $freeOver     = (float) ($cfg["free_shipping_over"] ?? 500);
+        $taxRate      = (float) ($cfg["tax_rate"] ?? 0.08);
+
+        $shipping = !$hasPhysical ? 0 : ($subtotal > $freeOver ? 0 : $flatShipping);
+        $tax      = round($subtotal * $taxRate, 2);
+        $total    = round($subtotal + $shipping + $tax, 2);
 
         $db->beginTransaction();
         $stmt = $db->prepare("
-            INSERT INTO orders (customer_name, customer_email, customer_phone, address, subtotal, shipping, tax, total)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO orders (customer_name, customer_email, customer_phone, address, subtotal, shipping, tax, total, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$name, $email, $phone, $address, $subtotal, $shipping, $tax, $total]);
+        $stmt->execute([
+            $name, $email, $phone, $address,
+            $subtotal, $shipping, $tax, $total,
+            (string) ($body["notes"] ?? ""),
+        ]);
         $orderId = (int) $db->lastInsertId();
 
         $itemStmt = $db->prepare("
-            INSERT INTO order_items (order_id, product_id, product_name, unit_price, quantity)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO order_items (order_id, product_id, product_name, unit_price, quantity, is_digital)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
         foreach ($items as $it) {
+            $pid = (string) ($it["product_id"] ?? "");
             $itemStmt->execute([
-                $orderId,
-                $it["product_id"]   ?? "",
-                $it["product_name"] ?? "",
+                $orderId, $pid,
+                (string) ($it["product_name"] ?? ""),
                 (float) ($it["unit_price"] ?? 0),
                 (int) ($it["quantity"] ?? 1),
+                in_array($pid, $digitalIds, true) ? 1 : 0,
             ]);
         }
         $db->commit();
 
         http_response_code(201);
-        echo json_encode(["success" => true, "order_id" => $orderId, "total" => $total]);
+        echo json_encode([
+            "success"      => true,
+            "order_id"     => $orderId,
+            "total"        => $total,
+            "has_digital"  => count($digitalIds) > 0,
+        ]);
         exit;
     }
 
@@ -87,8 +119,12 @@ try {
         require_admin();
         if (!$id) { http_response_code(400); echo json_encode(["error" => "id required"]); exit; }
         $body = json_decode(file_get_contents("php://input"), true) ?? [];
-        $stmt = $db->prepare("UPDATE orders SET status = ? WHERE id = ?");
-        $stmt->execute([(string) ($body["status"] ?? "pending"), $id]);
+        $stmt = $db->prepare("UPDATE orders SET status = ?, notes = COALESCE(?, notes) WHERE id = ?");
+        $stmt->execute([
+            (string) ($body["status"] ?? "pending"),
+            $body["notes"] ?? null,
+            $id,
+        ]);
         echo json_encode(["success" => true]);
         exit;
     }
@@ -96,8 +132,7 @@ try {
     if ($method === "DELETE") {
         require_admin();
         if (!$id) { http_response_code(400); echo json_encode(["error" => "id required"]); exit; }
-        $stmt = $db->prepare("DELETE FROM orders WHERE id = ?");
-        $stmt->execute([$id]);
+        $db->prepare("DELETE FROM orders WHERE id = ?")->execute([$id]);
         echo json_encode(["success" => true]);
         exit;
     }
