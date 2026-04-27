@@ -1,0 +1,7 @@
+# Allow direct access to uploaded files
+RewriteEngine Off
+Options -Indexes
+# Block PHP execution in uploads directory for safety
+<FilesMatch "\.(php|phtml|php3|php4|php5|phps)$">
+  Require all denied
+</FilesMatch>
