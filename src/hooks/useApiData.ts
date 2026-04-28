@@ -53,6 +53,7 @@ function apiToDigital(p: ApiDigitalProduct): DigitalProduct {
     features: Array.isArray(p.features) ? p.features : [],
     badge: (p.badge as DigitalProduct["badge"]) ?? undefined,
     gradient: "from-primary/30 to-highlight/20",
+    isFree: !!p.is_free || Number(p.price) === 0,
   };
 }
 
