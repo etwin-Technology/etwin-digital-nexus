@@ -11,6 +11,8 @@ import {
   Loader2,
   Menu,
   X,
+  Tags,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -29,11 +31,13 @@ export const Route = createFileRoute("/admin")({
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
+  { to: "/admin/categories", label: "Categories", icon: Tags, exact: false },
   { to: "/admin/digital-products", label: "Digital Products", icon: Boxes, exact: false },
   { to: "/admin/services", label: "Services", icon: Wrench, exact: false },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Mail, exact: false },
   { to: "/admin/requests", label: "Service Requests", icon: Inbox, exact: false },
+  { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
 function AdminLayout() {
