@@ -59,18 +59,32 @@ function CheckoutPage() {
     setSubmitting(true);
     try {
       const fullAddress = [form.address, form.city, form.zip, form.country].filter(Boolean).join(", ");
-      const res = await api.post<{ success: boolean; order_id: number; total: number }>("/orders", {
-        customer_name: form.name,
-        customer_email: form.email,
-        customer_phone: form.phone,
-        address: fullAddress,
-        items: items.map((i) => ({
-          product_id: i.product.id,
-          product_name: i.product.name,
-          unit_price: i.product.price,
-          quantity: i.quantity,
-        })),
-      });
+      const orderItems = items.map((i) => ({
+        product_id: i.product.id,
+        product_name: i.product.name,
+        unit_price: i.product.price,
+        quantity: i.quantity,
+      }));
+      const res = await api.post<{ success: boolean; order_id: number; total: number; has_digital?: boolean }>(
+        "/orders",
+        {
+          customer_name: form.name,
+          customer_email: form.email,
+          customer_phone: form.phone,
+          address: fullAddress,
+          items: orderItems,
+        },
+      );
+      // Stash digital item IDs + email so the success page can request download tokens
+      try {
+        sessionStorage.setItem(
+          `etwin:order:${res.order_id}`,
+          JSON.stringify({
+            email: form.email,
+            productIds: items.map((i) => i.product.id),
+          }),
+        );
+      } catch {}
       clear();
       toast.success(`Order #${res.order_id} placed!`);
       navigate({ to: "/checkout-success", search: { orderId: res.order_id, total: res.total } });
