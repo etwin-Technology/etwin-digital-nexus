@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, MessageCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { api, type ApiOrder } from "@/lib/api";
+import { api, type ApiOrder, type ApiSettings } from "@/lib/api";
 import {
   AdminButton,
   AdminModal,
@@ -20,13 +20,23 @@ const STATUSES = ["pending", "paid", "shipped", "completed", "cancelled"];
 
 function OrdersAdmin() {
   const [rows, setRows] = useState<ApiOrder[]>([]);
+  const [settings, setSettings] = useState<ApiSettings>({});
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<ApiOrder | null>(null);
   const [statusEdit, setStatusEdit] = useState("");
 
   const load = () => {
     setLoading(true);
-    api.get<ApiOrder[]>("/orders").then(setRows).catch((e) => toast.error(e.message)).finally(() => setLoading(false));
+    Promise.all([
+      api.get<ApiOrder[]>("/orders"),
+      api.get<ApiSettings>("/settings").catch(() => ({})),
+    ])
+      .then(([o, s]) => {
+        setRows(o);
+        setSettings(s);
+      })
+      .catch((e) => toast.error(e.message))
+      .finally(() => setLoading(false));
   };
   useEffect(load, []);
 
@@ -40,12 +50,14 @@ function OrdersAdmin() {
     }
   };
 
-  const updateStatus = async () => {
+  const updateStatus = async (newStatus?: string) => {
     if (!viewing) return;
+    const status = newStatus ?? statusEdit;
     try {
-      await api.put(`/orders/${viewing.id}`, { status: statusEdit });
-      toast.success("Status updated");
-      setViewing(null);
+      await api.put(`/orders/${viewing.id}`, { status });
+      toast.success(`Status → ${status}`);
+      setStatusEdit(status);
+      setViewing({ ...viewing, status });
       load();
     } catch (e: any) {
       toast.error(e.message);
@@ -61,6 +73,27 @@ function OrdersAdmin() {
     } catch (e: any) {
       toast.error(e.message);
     }
+  };
+
+  const sendWhatsApp = (toNumber: string) => {
+    if (!viewing) return;
+    const storeName = settings.store_name || "eTwin";
+    const itemsTxt = (viewing.items ?? [])
+      .map((it) => `• ${it.product_name} ×${it.quantity} — $${(Number(it.unit_price) * it.quantity).toFixed(2)}`)
+      .join("%0A");
+    const msg =
+      `*${storeName}* — Order #${viewing.id}%0A` +
+      `Hi ${viewing.customer_name},%0A%0A` +
+      `Status: *${viewing.status.toUpperCase()}*%0A` +
+      `Total: *$${Number(viewing.total).toFixed(2)}*%0A%0A` +
+      `Items:%0A${itemsTxt}%0A%0A` +
+      `Thanks for your order!`;
+    const phone = (toNumber || "").replace(/[^\d]/g, "");
+    if (!phone) {
+      toast.error("No WhatsApp number — set one in Settings or enter customer phone.");
+      return;
+    }
+    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank", "noopener");
   };
 
   return (
@@ -162,6 +195,29 @@ function OrdersAdmin() {
               </dd>
             </dl>
 
+            {/* Quick actions */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+              {viewing.status !== "paid" && viewing.status !== "completed" && (
+                <AdminButton onClick={() => updateStatus("paid")}>
+                  <CheckCircle2 className="h-4 w-4" /> Mark as paid
+                </AdminButton>
+              )}
+              <AdminButton
+                variant="secondary"
+                onClick={() => sendWhatsApp(viewing.customer_phone || settings.whatsapp_number || "")}
+              >
+                <MessageCircle className="h-4 w-4" /> Send to customer
+              </AdminButton>
+              {settings.whatsapp_number && (
+                <AdminButton
+                  variant="secondary"
+                  onClick={() => sendWhatsApp(settings.whatsapp_number)}
+                >
+                  <MessageCircle className="h-4 w-4" /> Notify store
+                </AdminButton>
+              )}
+            </div>
+
             <div className="flex items-end gap-3 pt-2 border-t border-border">
               <div className="flex-1">
                 <AdminSelect
@@ -171,7 +227,7 @@ function OrdersAdmin() {
                   onChange={(e) => setStatusEdit(e.target.value)}
                 />
               </div>
-              <AdminButton onClick={updateStatus}>Update</AdminButton>
+              <AdminButton onClick={() => updateStatus()}>Update</AdminButton>
             </div>
           </div>
         )}
