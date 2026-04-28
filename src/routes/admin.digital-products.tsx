@@ -13,6 +13,7 @@ import {
   FeaturesField,
   PageHeader,
 } from "@/components/admin/AdminUI";
+import { ImageUploader, FileUploader } from "@/components/admin/Uploaders";
 
 export const Route = createFileRoute("/admin/digital-products")({
   component: DigitalAdmin,
@@ -39,7 +40,10 @@ const empty = (): ApiDigitalProduct => ({
   tagline: "",
   features: [],
   badge: null,
+  image: null,
   download_url: null,
+  file_path: null,
+  is_free: false,
 });
 
 function DigitalAdmin() {
@@ -213,10 +217,30 @@ function DigitalAdmin() {
               value={editing.features}
               onChange={(features) => setEditing({ ...editing, features })}
             />
+            <ImageUploader
+              label="Cover image"
+              value={editing.image ?? ""}
+              onChange={(url) => setEditing({ ...editing, image: url || null })}
+            />
+            <FileUploader
+              label="Downloadable file (zip/pdf/...)"
+              value={editing.file_path ?? ""}
+              onChange={(path) => setEditing({ ...editing, file_path: path || null })}
+            />
             <AdminInput
-              label="Download URL (optional)" value={editing.download_url ?? ""}
+              label="External download URL (optional, used if no file)"
+              value={editing.download_url ?? ""}
               onChange={(e) => setEditing({ ...editing, download_url: e.target.value || null })}
             />
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={!!editing.is_free}
+                onChange={(e) => setEditing({ ...editing, is_free: e.target.checked })}
+                className="h-4 w-4 accent-primary"
+              />
+              <span className="text-sm">Free download (instant, no payment required)</span>
+            </label>
             <div className="flex justify-end gap-2 pt-2">
               <AdminButton type="button" variant="secondary" onClick={() => setEditing(null)}>
                 Cancel
