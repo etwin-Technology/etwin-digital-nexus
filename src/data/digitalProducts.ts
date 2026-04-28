@@ -14,6 +14,7 @@ export type DigitalProduct = {
   features: string[];
   badge?: "Bestseller" | "New" | "Pro";
   gradient: string;
+  isFree?: boolean;
 };
 
 export const digitalProducts: DigitalProduct[] = [

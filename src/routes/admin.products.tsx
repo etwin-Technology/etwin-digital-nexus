@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { api, type ApiProduct } from "@/lib/api";
+import { api, type ApiProduct, type ApiCategory } from "@/lib/api";
 import {
   AdminButton,
   AdminInput,
@@ -13,26 +13,29 @@ import {
   FeaturesField,
   PageHeader,
 } from "@/components/admin/AdminUI";
+import { ImageUploader, GalleryUploader } from "@/components/admin/Uploaders";
 
 export const Route = createFileRoute("/admin/products")({
   component: ProductsAdmin,
 });
-
-const CATEGORIES = ["Audio", "Wearables", "Computers", "Mobile", "Accessories"];
 
 const empty = (): ApiProduct => ({
   id: "",
   name: "",
   price: 0,
   category: "Accessories",
+  category_id: null,
   image: "",
+  images: [],
   description: "",
   highlights: [],
   stock: 0,
+  featured: false,
 });
 
 function ProductsAdmin() {
   const [rows, setRows] = useState<ApiProduct[]>([]);
+  const [cats, setCats] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<ApiProduct | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -40,7 +43,16 @@ function ProductsAdmin() {
 
   const load = () => {
     setLoading(true);
-    api.get<ApiProduct[]>("/products").then(setRows).catch((e) => toast.error(e.message)).finally(() => setLoading(false));
+    Promise.all([
+      api.get<ApiProduct[]>("/products"),
+      api.get<ApiCategory[]>("/categories").catch(() => [] as ApiCategory[]),
+    ])
+      .then(([p, c]) => {
+        setRows(p);
+        setCats(c);
+      })
+      .catch((e) => toast.error(e.message))
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -75,6 +87,8 @@ function ProductsAdmin() {
       toast.error(e.message);
     }
   };
+
+  const categoryOptions = cats.length ? cats.map((c) => c.name) : ["Audio", "Wearables", "Computers", "Mobile", "Accessories"];
 
   return (
     <div>
@@ -119,16 +133,18 @@ function ProductsAdmin() {
           },
           { key: "stock", label: "Stock" },
           {
+            key: "featured",
+            label: "Featured",
+            render: (r) => (r.featured ? <span className="text-primary text-xs font-semibold">★</span> : <span className="text-muted-foreground text-xs">—</span>),
+          },
+          {
             key: "actions",
             label: "",
             className: "w-24 text-right",
             render: (r) => (
               <div className="flex items-center justify-end gap-1">
                 <button
-                  onClick={() => {
-                    setEditing(r);
-                    setIsNew(false);
-                  }}
+                  onClick={() => { setEditing({ ...r, images: r.images ?? [] }); setIsNew(false); }}
                   className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
                   aria-label="Edit"
                 >
@@ -154,12 +170,20 @@ function ProductsAdmin() {
       >
         {editing && (
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSave();
-            }}
-            className="space-y-4"
+            onSubmit={(e) => { e.preventDefault(); onSave(); }}
+            className="space-y-5"
           >
+            <ImageUploader
+              label="Main image"
+              value={editing.image}
+              onChange={(url) => setEditing({ ...editing, image: url })}
+            />
+
+            <GalleryUploader
+              value={editing.images ?? []}
+              onChange={(images) => setEditing({ ...editing, images })}
+            />
+
             <div className="grid sm:grid-cols-2 gap-4">
               <AdminInput
                 label="ID (slug)"
@@ -189,15 +213,23 @@ function ProductsAdmin() {
               />
               <AdminSelect
                 label="Category"
-                options={CATEGORIES}
+                options={categoryOptions}
                 value={editing.category}
-                onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  const matched = cats.find((c) => c.name === name);
+                  setEditing({ ...editing, category: name, category_id: matched?.id ?? null });
+                }}
               />
-              <AdminInput
-                label="Image URL"
-                value={editing.image}
-                onChange={(e) => setEditing({ ...editing, image: e.target.value })}
-              />
+              <label className="flex items-center gap-3 mt-6">
+                <input
+                  type="checkbox"
+                  checked={!!editing.featured}
+                  onChange={(e) => setEditing({ ...editing, featured: e.target.checked })}
+                  className="h-4 w-4 accent-primary"
+                />
+                <span className="text-sm">Featured on homepage</span>
+              </label>
             </div>
             <AdminTextarea
               label="Description"

@@ -9,6 +9,7 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { DigitalCardSkeleton, ServiceCardSkeleton } from "@/components/Skeletons";
 import { useCart } from "@/context/CartContext";
 import { ServiceRequestModal } from "@/components/ServiceRequestModal";
+import { API_URL, api, type ApiDownloadToken } from "@/lib/api";
 import type { Service } from "@/data/services";
 
 export const Route = createFileRoute("/digital")({
@@ -215,6 +216,7 @@ function DigitalProductsSection() {
 function DigitalProductCard({ product, index }: { product: DigitalProduct; index: number }) {
   const Icon = product.icon;
   const { add } = useCart();
+  const [downloading, setDownloading] = useState(false);
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
@@ -227,7 +229,6 @@ function DigitalProductCard({ product, index }: { product: DigitalProduct; index
         : "bg-purple-500/15 text-purple-300 border-purple-500/30";
 
   const handleBuy = () => {
-    // Reuse the cart system: digital products map onto Product shape
     add({
       id: product.id,
       name: product.name,
@@ -238,6 +239,19 @@ function DigitalProductCard({ product, index }: { product: DigitalProduct; index
       highlights: product.features,
     });
     toast.success(`${product.name} added to cart`);
+  };
+
+  const handleFreeDownload = async () => {
+    setDownloading(true);
+    try {
+      const t = await api.post<ApiDownloadToken>("/downloads", { product_id: product.id });
+      window.open(`${API_URL}/downloads?token=${t.token}`, "_blank", "noopener");
+      toast.success("Download started");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Download failed");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -267,7 +281,12 @@ function DigitalProductCard({ product, index }: { product: DigitalProduct; index
             {product.badge}
           </span>
         )}
-        {discount > 0 && (
+        {product.isFree && (
+          <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/90 text-white">
+            FREE
+          </span>
+        )}
+        {!product.isFree && discount > 0 && (
           <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground">
             -{discount}%
           </span>
@@ -302,19 +321,35 @@ function DigitalProductCard({ product, index }: { product: DigitalProduct; index
 
         <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold gradient-text">${product.price}</span>
-            {product.oldPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                ${product.oldPrice}
-              </span>
+            {product.isFree ? (
+              <span className="text-xl font-bold text-emerald-400">Free</span>
+            ) : (
+              <>
+                <span className="text-xl font-bold gradient-text">${product.price}</span>
+                {product.oldPrice && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ${product.oldPrice}
+                  </span>
+                )}
+              </>
             )}
           </div>
-          <button
-            onClick={handleBuy}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-[0_0_20px_-5px_var(--primary)] hover:scale-105 active:scale-95 transition-transform"
-          >
-            <Download className="h-3.5 w-3.5" /> Buy now
-          </button>
+          {product.isFree ? (
+            <button
+              onClick={handleFreeDownload}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-white hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" /> {downloading ? "..." : "Download"}
+            </button>
+          ) : (
+            <button
+              onClick={handleBuy}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-[0_0_20px_-5px_var(--primary)] hover:scale-105 active:scale-95 transition-transform"
+            >
+              <Download className="h-3.5 w-3.5" /> Buy now
+            </button>
+          )}
         </div>
       </div>
     </motion.article>
